@@ -5,7 +5,7 @@ import java.net.Socket;
 
 public class LoginThread implements Runnable {
     private static int tryLogin(String username, String password) {
-        if (username.equals("admin")) return 0;
+        if (database.query(username, password)) return 0;
         else return 1;
     }
 
