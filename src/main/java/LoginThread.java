@@ -9,7 +9,7 @@ public class LoginThread implements Runnable {
         else return 1;
     }
 
-    private Socket socket;
+    private final Socket socket;
 
     public LoginThread(Socket socket) {
         this.socket = socket;
@@ -31,7 +31,7 @@ public class LoginThread implements Runnable {
 
             if (tryLogin(message.parameters[0], message.parameters[1]) == 1) {
                 if(Player.getPlayerStatus(message.parameters[0]) != 0) {
-
+                    Player.getPlayer(message.parameters[0]).offline();
                 }
                 Phraser.send(os, new Message(13, new String[]{"Ok to login"}));
                 (new Player(message.parameters[0], socket)).start();

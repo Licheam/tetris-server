@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.util.Collections;
+
 public class CooperativeRoom extends GameRoom {
 
     public static GameRoom createRoom(String id) {
@@ -31,13 +34,38 @@ public class CooperativeRoom extends GameRoom {
 
     @Override
     public void run() {
-        if (!status.compareAndSet(1, 2)) return;
+        try {
+            if (!status.compareAndSet(1, 2)) return;
 
-        Thread tetrisThread = new Thread(tetris);
-        tetrisThread.start();
+            for (Player player : getPlayers()) {
+                Phraser.send(player.getOs(), new Message(17, new String[]{"Error Parameters", "H"}));
+            }
 
-        while (tetrisThread.isAlive()) {
+            Thread tetrisThread = new Thread(tetris);
+            tetrisThread.start();
 
+            while (tetrisThread.isAlive() && getStatus() == 2) {
+                if (tetris.hasFrame()) {
+                    Frame frame = tetris.getFrame();
+
+                    for (Player player : getPlayers()) {
+                        if (frame.state == Tetris.fail) {
+                            Phraser.send(player.getOs(), new Message(12, new String[]{Integer.toString(frame.score), Integer.toString(frame.score)}));
+                            close();
+                            return;
+                        } else {
+                            Phraser.send(player.getOs(), new Message(9, new String[]{frame.scene, frame.nexts, Integer.toString(frame.score), Integer.toString(frame.score)}));
+                        }
+                    }
+                }
+            }
+            for (Player player : getPlayers()) {
+                Phraser.send(player.getOs(), new Message(11, new String[]{"Game is forced closed"}));
+            }
+            close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            close();
         }
     }
 }

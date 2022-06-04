@@ -3,6 +3,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Hashtable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Player {
 
@@ -11,12 +12,40 @@ public class Player {
         else return players.get(name).getStatus();
     }
 
+    public static Player getPlayer(String name) {
+        if(players.containsKey(name))
+            return players.get(name);
+        return null;
+    }
+
+    public int getStatus() {
+        return status.get();
+    }
+
     public String getName() {
         return name;
     }
 
+    public OutputStream getOs() {
+        return os;
+    }
+
+    public InputStream getIs() {
+        return is;
+    }
+
+    public void offline() {
+        try {
+            this.status.set(0);
+            players.remove(name);
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private static final Hashtable<String, Player> players = new Hashtable<>();
-    private volatile int status;//0 offline, 1 online, 2 playing
+    private final AtomicInteger status;//0 offline, 1 online, 2 playing
     private final String name;
     private final Socket socket;
     private final InputStream is;
@@ -25,6 +54,7 @@ public class Player {
     public Player(String name, Socket socket) throws IOException {
         this.socket = socket;
         this.name = name;
+        this.status = new AtomicInteger(1);
         is = socket.getInputStream();
         os = socket.getOutputStream();
         if (players.containsKey(name)) {
@@ -33,23 +63,9 @@ public class Player {
         players.put(name, this);
     }
 
-    private void offline() {
-        try {
-            this.status = 0;
-            players.remove(name);
-            socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private int getStatus() {
-        return status;
-    }
-
     public void start() {
         try {
-            while (status != 0) {
+            while (getStatus() == 2) {
                 Message message = Phraser.blockToReceive(is);
 
                 if (message.attribute == 4) {
@@ -67,7 +83,6 @@ public class Player {
                     }
                     String id = message.parameters[0];
 
-                    //Cooperative
                     if (message.parameters[1].equals("H") || message.parameters[1].equals("J")) {
                         GameRoom room;
                         if (message.parameters[1].equals("H")) {
@@ -133,9 +148,10 @@ public class Player {
                                     case "s" -> room.operate(0, this);
                                     default -> throw new IOException("Error Frame");
                                 }
+                            } else if(message.attribute == 1) {
+                                break;
                             }
                         }
-
                     } else {
                         Phraser.send(os, new Message(0, new String[]{"No such game type"}));
                     }

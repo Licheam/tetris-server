@@ -18,11 +18,9 @@ public abstract class GameRoom implements Runnable {
         return players;
     }
 
-    public int join(Player player) {
-        if (getStatus() == 2) return -1;
-        else {
+    public void join(Player player) {
+        if (getStatus() != 2) {
             players.add(player);
-            return players.indexOf(player);
         }
     }
 
@@ -46,8 +44,8 @@ public abstract class GameRoom implements Runnable {
 
     protected GameRoom(String id) {
         this.id = id;
-        this.status.set(1);
-        this.players = Collections.synchronizedList(new ArrayList<Player>());
+        this.status = new AtomicInteger(1);
+        this.players = Collections.synchronizedList(new ArrayList<>());
         this.roomThread = new Thread(this);
         rooms.put(id, this);
     }
