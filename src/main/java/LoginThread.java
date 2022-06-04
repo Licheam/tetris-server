@@ -5,11 +5,12 @@ import java.net.Socket;
 
 public class LoginThread implements Runnable {
     private static int tryLogin(String username, String password) {
-        if (username.equals("admin")) return 0;
+        if (database.query(username, password)) return 0;
         else return 1;
     }
 
     private Socket socket;
+    private static DBInfo database = new DBInfo("com.mysql.cj.jdbc.Driver", "jdbc:mysql://localhost:3306/TETRIS", "root", "12345678");
 
     public LoginThread(Socket socket) {
         this.socket = socket;
