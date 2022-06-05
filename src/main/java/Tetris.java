@@ -73,7 +73,7 @@ public class Tetris implements Runnable{
     };
     public static int[] I = {0, 1}, O={2}, T={3, 4, 5, 6}, Z={7, 8}, S={9, 10}, J={11, 12, 13, 14}, L={15, 16, 17, 18};
     private int[] X;
-    private char[][] game = null;
+    private char[][] game, frame = null;
     private char[] nexts;
     private Integer state = null, framecnt = 0, speed = 2;
     public int n, m, score, members;
@@ -121,7 +121,21 @@ public class Tetris implements Runnable{
     public synchronized boolean hasFrame(){
         return !frames.isEmpty();
     }
-
+    public void newFrame(){
+        frame = new char[n][m];
+        for(int i = 0; i < n; i++)
+            System.arraycopy(game[i], 0, frame[i], 0, m);
+    }
+    public void fixToFrame(blockInfo block){
+        int[][] blk = blocks[block.blockIdxs[block.idx]];
+        for(int i = 0; i < 4; i++){
+            int x = block.x + blk[i][0], y = block.y + blk[i][1];
+            if (x < 0 || x >= m || y < 0 || y >= n) continue;
+//            System.out.println(x + " " + blk[i][0] + " " + y + " " + blk[i][1]);
+            frame[y][x] = block.color;
+        }
+//        System.out.println();
+    }
 
     private void generateNext(int i){
         int idx = random.nextInt(numSymbols);
@@ -146,20 +160,32 @@ public class Tetris implements Runnable{
         int[][] blk = blocks[block.blockIdxs[block.idx]];
         for(int i = 0; i < 4; i++){
             int x = block.x + blk[i][0], y = block.y + blk[i][1];
+//            System.out.println(x + " " + blk[i][0] + " " + y + " " + blk[i][1]);
             game[y][x] = block.color;
         }
+//        System.out.println();
     }
-    private Frame drawFrame(){
-        char[][] curGame = new char[n][m];
-        for(int i = 0; i < n; i++)
-            System.arraycopy(game[i], 0, curGame[i], 0, m);
-        for(blockInfo block : movingBlocks.values()){
-            int[][] blk = blocks[block.blockIdxs[block.idx]];
-            for(int i = 0; i < 4; i++){
-                int x = block.x + blk[i][0], y = block.y + blk[i][1];
-                if(x < 0 || x >= m || y < 0 || y >= n) continue;
-                curGame[y][x] = block.color;
+    private Frame drawFrame(boolean useFrame){
+        char[][] curGame;
+        if(!useFrame) {
+            curGame = new char[n][m];
+            for (int i = 0; i < n; i++)
+                System.arraycopy(game[i], 0, curGame[i], 0, m);
+            for (blockInfo block : movingBlocks.values()) {
+                int[][] blk = blocks[block.blockIdxs[block.idx]];
+                for (int i = 0; i < 4; i++) {
+                    int x = block.x + blk[i][0], y = block.y + blk[i][1];
+                    if (x < 0 || x >= m || y < 0 || y >= n) continue;
+                    curGame[y][x] = block.color;
+                }
             }
+        }else{
+            curGame = frame;
+        }
+        for(int i = 0, j = n - 1; i < j; i++, j--){
+            char[] x =  curGame[i];
+            curGame[i] = curGame[j];
+            curGame[j] = x;
         }
         return new Frame(state, curGame, score, new String(nexts));
     }
@@ -204,7 +230,7 @@ public class Tetris implements Runnable{
         score += cleared * cleared;
     }
 
-    private void fixBlocks(){
+    private synchronized void fixBlocks(){
         int dy = -1;
         framecnt = 0;
         for (int id = 0; id < members; id++) {
@@ -215,8 +241,10 @@ public class Tetris implements Runnable{
             for (int i = 0; i < 4; i++) {
                 int bx = nx + blks[i][0], by = ny + blks[i][1];
                 if (bx < 0 || bx >= m || by < 0 || (by < n && game[by][bx] != '_')) {
+//                    if((bx >= 0 && bx < m && by >= 0 && by < n && game[by][bx] != '_'))
+//                        System.out.println(id + " Bound " + bx + " " + by + " " + (bx >= 0 && bx < m && by >= 0 && by < n && frame[by][bx] != '_') + " " + frame[by][bx]);
                     isOK = false;
-                }else if(by >= n){
+                }else if(by-dy >= n){
                     outOfBound = true;
                 }
             }
@@ -226,6 +254,7 @@ public class Tetris implements Runnable{
                     state = fail;
                     continue;
                 }
+//                System.out.println("Fix " + id + " " + block.x + " " + block.y + " ");
                 fixBlock(block);
                 movingBlocks.remove(id);
             }
@@ -239,12 +268,17 @@ public class Tetris implements Runnable{
             speed = speed * 2;
         }
     }
-    private void doOperations(){
-        for (int id = 0; id < members; id++) {
+    private void checkOutBlocks(){
+        for(int id = 0; id < members; id++)
             if (!movingBlocks.containsKey(id) || movingBlocks.get(id) == null) {
                 insert(id, nexts[id]);
                 generateNext(id);
             }
+    }
+    private void doOperations(){
+        newFrame();
+        for (int id = 0; id < members; id++) {
+            checkOutBlocks();
             blockInfo block = movingBlocks.get(id);
             int nx = block.x + block.dx, ny = block.y + block.dy, idx = (block.idx + block.rotate) % block.blockIdxs.length;
             if (block.land == 1) tryLand(block);
@@ -252,7 +286,7 @@ public class Tetris implements Runnable{
             boolean isOK = true;
             for (int i = 0; i < 4; i++) {
                 int bx = nx + blks[i][0], by = ny + blks[i][1];
-                if (bx < 0 || bx >= m || by < 0 || (by < n && game[by][bx] != '_')) {
+                if (bx < 0 || bx >= m || by < 0 || (by < n && frame[by][bx] != '_')) {
                     isOK = false;
                     break;
                 }
@@ -262,6 +296,7 @@ public class Tetris implements Runnable{
                 block.y = ny;
                 block.idx = idx;
             }
+            fixToFrame(block);
             block.Operated();
         }
     }
@@ -273,13 +308,17 @@ public class Tetris implements Runnable{
             framecnt++;
             doOperations();
 
-            if (framecnt == 50 / speed) fixBlocks();
+            if (framecnt == 50 / speed) {
+                fixBlocks();
+                frames.add(drawFrame(false));
+            }else frames.add(drawFrame(true));
+            checkOutBlocks();
             speedUp();
-            frames.add(drawFrame());
 
             long sleepTime = 20 - Duration.between(frameStamp, Instant.now()).toMillis();
             try {
-                Thread.sleep(sleepTime);
+                if(sleepTime > 0)
+                    Thread.sleep(sleepTime);
             } catch (Exception e) {
                 e.printStackTrace();
             }
