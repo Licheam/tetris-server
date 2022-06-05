@@ -161,7 +161,7 @@ public class Tetris implements Runnable{
                 curGame[y][x] = block.color;
             }
         }
-        return new Frame(state, curGame, score, Arrays.toString(nexts));
+        return new Frame(state, curGame, score, new String(nexts));
     }
 
     private void tryLand(blockInfo block){
