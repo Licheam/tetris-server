@@ -15,21 +15,27 @@ public class Phraser {
         return sb.toString();
     }
 
+    public static String ByteArrayToHex(Byte[] a) {
+        StringBuilder sb = new StringBuilder(a.length * 2);
+        for (byte b : a)
+            sb.append(String.format("%02x", b));
+        return sb.toString();
+    }
+
     private static int bytesToInt(byte[] b) {
         if (b.length < 4) return 0;
-        int r = 0;
-        for (int i = 0; i < 4; i++)
-            r += (int) (b[i]) << (i * 8);
-        return r;
+        return ((b[3] & 0xFF) << 24) |
+                ((b[2] & 0xFF) << 16) |
+                ((b[1] & 0xFF) << 8) |
+                ((b[0] & 0xFF));
     }
 
     private static Byte[] intToBytes(int x) {
-        Byte[] bytes = new Byte[4];
-        for (int i = 0; i < 4; i++) {
-            bytes[i] = (byte) (x % (1 << 8));
-            x >>= 8;
-        }
-        return bytes;
+        return new Byte[]{
+                (byte) x,
+                (byte) (x >>> 8),
+                (byte) (x >>> 16),
+                (byte) (x >>> 24)};
     }
 
     public static Message blockToReceive(InputStream is) throws IOException {
@@ -61,10 +67,12 @@ public class Phraser {
             int len = bytesToInt(buff);
             byte[] para = new byte[len];
             sz = is.read(para);
+            System.out.println("READING a len " + len + " as size " + sz + " aka " + byteArrayToHex(buff));
             if (sz != len) {
-                throw new IOException("Frame Parameter Damage : parameters length with " + sz + ", doesn't fit " + sz);
+                throw new IOException("Frame{" + attr + "," + cnt + "," + i + "} Parameter Damage : parameters length with " + sz + ", doesn't fit " + len + " aka " + byteArrayToHex(buff));
             }
             paras[i] = new String(para, StandardCharsets.UTF_8);
+            System.out.println(paras[i]);
         }
 
         System.out.println("Receive a message:");
@@ -86,6 +94,9 @@ public class Phraser {
         buff.addAll(Arrays.asList(intToBytes(message.attribute)));
         buff.addAll(Arrays.asList(intToBytes(message.parameters.length)));
         for (int i = 0; i < message.parameters.length; i++) {
+            assert message.parameters[i].length() == Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))).size();
+            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
+            System.out.println("'" + message.parameters[i] + "'");
             buff.addAll(Arrays.asList(intToBytes(message.parameters[i].length())));
             buff.addAll(Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))));
         }
