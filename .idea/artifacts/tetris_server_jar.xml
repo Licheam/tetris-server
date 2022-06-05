@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="tetris-server:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/tetris_server_jar</output-path>
+    <root id="archive" name="tetris-server.jar">
+      <element id="module-output" name="tetris-server" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/apache/commons/commons-lang3/3.8.1/commons-lang3-3.8.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
