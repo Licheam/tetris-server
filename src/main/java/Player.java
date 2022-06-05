@@ -86,9 +86,10 @@ public class Player {
 
                     if (message.parameters[1].equals("H") || message.parameters[1].equals("J")) {
                         GameRoom room;
-                        if (message.parameters[1].equals("H")) {
+                        String gameType = message.parameters[1];
+                        if (gameType.equals("H")) {
                             if (CooperativeRoom.getRoom(id) == null) {
-                                Phraser.send(os, new Message(8, new String[]{"Create New Room"}));
+                                Phraser.send(os, new Message(7, new String[]{"Create New Room"}));
                                 message = Phraser.blockToReceive(is);
                                 if (message.attribute == 0) continue;
                                 else if (message.attribute != 1) throw new IOException("Error Frame");
@@ -96,7 +97,7 @@ public class Player {
                             room = CooperativeRoom.createRoom(id);
                         } else {
                             if (CompetitiveRoom.getRoom(id) == null) {
-                                Phraser.send(os, new Message(8, new String[]{"Create New Room"}));
+                                Phraser.send(os, new Message(7, new String[]{"Create New Room"}));
                                 message = Phraser.blockToReceive(is);
                                 if (message.attribute == 0) continue;
                                 else if (message.attribute != 1) throw new IOException("Error Frame");
@@ -104,17 +105,20 @@ public class Player {
                             room = CompetitiveRoom.createRoom(id);
                         }
 
-                        if (room.getClass() != CooperativeRoom.class) {
+                        if (room.getClass() == CooperativeRoom.class && !gameType.equals("H")) {
+                            Phraser.send(os, new Message(0, new String[]{"Already used"}));
+                            continue;
+                        } else if (room.getClass() == CompetitiveRoom.class && !gameType.equals("J")) {
                             Phraser.send(os, new Message(0, new String[]{"Already used"}));
                             continue;
                         }
+
                         if (room.getPlayers().size() == 1) {
-                            Phraser.send(os, new Message(7, new String[]{room.getPlayers().get(0).getName()}));
+                            Phraser.send(os, new Message(8, new String[]{room.getPlayers().get(0).getName()}));
                             message = Phraser.blockToReceive(is);
                             if (message.attribute == 0) continue;
                             else if (message.attribute != 1) throw new IOException("Error Frame");
                         }
-
 
                         room.join(this);
                         if (room.getPlayers().size() == 2) {

@@ -60,7 +60,13 @@ public class CooperativeRoom extends GameRoom {
             }
             for (Player player : getPlayers()) {
                 try {
-                    Phraser.send(player.getOs(), new Message(11, new String[]{"Game is forced closed"}));
+                    if(!tetrisThread.isAlive()){
+                        Phraser.send(player.getOs(), new Message(11, new String[]{"Tetris is dead!"}));
+                    } else if(getStatus() != 2) {
+                        Phraser.send(player.getOs(), new Message(11, new String[]{"Game is closed by outside"}));
+                    } else {
+                        Phraser.send(player.getOs(), new Message(11, new String[]{"Game is closed by Unknown issues"}));
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

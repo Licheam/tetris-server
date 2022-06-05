@@ -1,11 +1,25 @@
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class TestClient implements Runnable {
+public class TestServer implements Runnable {
+
     public static void main(String[] args) {
         try {
-            Socket socket = new Socket("leachim.top", 6709);
+            ServerSocket serverSocket = new ServerSocket(6709);
+            while (true) {
+                Socket socket = serverSocket.accept();
+                System.out.println("Connected");
+                Thread serverThread = new Thread(new TestServer(socket));
+                serverThread.start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Socket socket = new Socket("localhost", 6709);
             System.out.println("Connected");
 
             InputStream is = socket.getInputStream();
@@ -30,10 +44,12 @@ public class TestClient implements Runnable {
         }
     }
 
+    OutputStream os;
     InputStream is;
 
-    TestClient(InputStream is) {
-        this.is = is;
+    TestServer(Socket socket) throws IOException {
+        this.is = socket.getInputStream();
+        this.os = socket.getOutputStream();
     }
 
     @Override
@@ -49,6 +65,14 @@ public class TestClient implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+    }
+}
+
+class Receiver implements Runnable {
+
+    @Override
+    public void run() {
 
     }
 }
