@@ -222,11 +222,12 @@ public class Tetris implements Runnable{
             }
             if (isOK) block.y = ny;
             else {
-                fixBlock(block);
-                movingBlocks.remove(id);
                 if (outOfBound){
                     state = fail;
+                    return;
                 }
+                fixBlock(block);
+                movingBlocks.remove(id);
             }
             clearRows();
         }
