@@ -64,10 +64,11 @@ public class Player {
     }
 
     public void start() {
+        System.out.println("Player in with status" + getStatus());
         try {
-            while (getStatus() == 2) {
+            while (getStatus() == 1) {
                 Message message = Phraser.blockToReceive(is);
-
+                System.out.println("Message received");
                 if (message.attribute == 4) {
                     Phraser.send(os, new Message(0, new String[]{"Not Support"}));
                 } else if (message.attribute == 5) {

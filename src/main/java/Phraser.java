@@ -8,6 +8,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Phraser {
+    public static String byteArrayToHex(byte[] a) {
+        StringBuilder sb = new StringBuilder(a.length * 2);
+        for(byte b: a)
+            sb.append(String.format("%02x", b));
+        return sb.toString();
+    }
 
     private static int bytesToInt(byte[] b) {
         if (b.length < 4) return 0;
@@ -46,6 +52,7 @@ public class Phraser {
         sz = is.read(buff);
         if (sz < 4) throw new IOException("Frame Attribute Damage");
         int cnt = bytesToInt(buff);
+
         String[] paras = new String[cnt];
 
         for (int i = 0; i < cnt; i++) {
@@ -54,10 +61,17 @@ public class Phraser {
             int len = bytesToInt(buff);
             byte[] para = new byte[len];
             sz = is.read(para);
-            if (sz < len) throw new IOException("Frame Parameter Damage");
+            if (sz < len) {
+                throw new IOException("Frame Parameter Damage");
+            }
             paras[i] = new String(para, StandardCharsets.UTF_8);
         }
 
+        System.out.println("Receive a message:");
+        System.out.println("Attr: " + attr);
+        for (String para : paras) {
+            System.out.println(para);
+        }
         return new Message(attr, paras);
     }
 
@@ -70,11 +84,17 @@ public class Phraser {
         ArrayList<Byte> buff = new ArrayList<>();
         buff.addAll(Arrays.asList(intToBytes(totalBytes)));
         buff.addAll(Arrays.asList(intToBytes(message.attribute)));
+        buff.addAll(Arrays.asList(intToBytes(message.parameters.length)));
         for (int i = 0; i < message.parameters.length; i++) {
             buff.addAll(Arrays.asList(intToBytes(message.parameters[i].length())));
             buff.addAll(Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))));
         }
         assert buff.size() == totalBytes + 4;
-        os.write((byte[]) ArrayUtils.toPrimitive(buff.toArray()));
+        System.out.println("Sending a message:");
+        System.out.println("Attr: " + message.attribute);
+        for (String para : message.parameters) {
+            System.out.println(para);
+        }
+        os.write(ArrayUtils.toPrimitive(buff.toArray(new Byte[0])));
     }
 }
