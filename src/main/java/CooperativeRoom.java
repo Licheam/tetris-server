@@ -38,7 +38,7 @@ public class CooperativeRoom extends GameRoom {
             if (!status.compareAndSet(1, 2)) return;
 
             for (int i = 0; i < 2; i++) {
-                Phraser.send(getPlayers().get(i).getOs(), new Message(17, new String[]{getPlayers().get(i^1).getName(), "H"}));
+                Phraser.send(getPlayers().get(i).getOs(), new Message(17, new String[]{getPlayers().get(i ^ 1).getName(), "H"}));
             }
 
             Thread tetrisThread = new Thread(tetris);
@@ -47,20 +47,23 @@ public class CooperativeRoom extends GameRoom {
             while (tetrisThread.isAlive() && getStatus() == 2) {
                 if (tetris.hasFrame()) {
                     Frame frame = tetris.getFrame();
-
-                    for (Player player : getPlayers()) {
-                        if (frame.state == Tetris.fail) {
+                    if (frame.state == Tetris.fail) {
+                        for (Player player : getPlayers())
                             Phraser.send(player.getOs(), new Message(12, new String[]{Integer.toString(frame.score), Integer.toString(frame.score)}));
-                            close();
-                            return;
-                        } else {
+                        close();
+                        return;
+                    } else {
+                        for (Player player : getPlayers())
                             Phraser.send(player.getOs(), new Message(9, new String[]{frame.scene, frame.nexts, Integer.toString(frame.score), Integer.toString(frame.score)}));
-                        }
                     }
                 }
             }
             for (Player player : getPlayers()) {
-                Phraser.send(player.getOs(), new Message(11, new String[]{"Game is forced closed"}));
+                try {
+                    Phraser.send(player.getOs(), new Message(11, new String[]{"Game is forced closed"}));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
             close();
         } catch (IOException e) {

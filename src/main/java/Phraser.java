@@ -67,12 +67,12 @@ public class Phraser {
             int len = bytesToInt(buff);
             byte[] para = new byte[len];
             sz = is.read(para);
-            System.out.println("READING a len " + len + " as size " + sz + " aka " + byteArrayToHex(buff));
+//            System.out.println("READING a len " + len + " as size " + sz + " aka " + byteArrayToHex(buff));
             if (sz != len) {
                 throw new IOException("Frame{" + attr + "," + cnt + "," + i + "} Parameter Damage : parameters length with " + sz + ", doesn't fit " + len + " aka " + byteArrayToHex(buff));
             }
             paras[i] = new String(para, StandardCharsets.UTF_8);
-            System.out.println(paras[i]);
+//            System.out.println(paras[i]);
         }
 
         System.out.println("Receive a message:");
@@ -95,8 +95,8 @@ public class Phraser {
         buff.addAll(Arrays.asList(intToBytes(message.parameters.length)));
         for (int i = 0; i < message.parameters.length; i++) {
             assert message.parameters[i].length() == Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))).size();
-            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
-            System.out.println("'" + message.parameters[i] + "'");
+//            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
+//            System.out.println("'" + message.parameters[i] + "'");
             buff.addAll(Arrays.asList(intToBytes(message.parameters[i].length())));
             buff.addAll(Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))));
         }
