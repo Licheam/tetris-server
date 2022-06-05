@@ -224,7 +224,7 @@ public class Tetris implements Runnable{
             else {
                 if (outOfBound){
                     state = fail;
-                    return;
+                    continue;
                 }
                 fixBlock(block);
                 movingBlocks.remove(id);
