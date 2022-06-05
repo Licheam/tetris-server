@@ -37,8 +37,8 @@ public class CooperativeRoom extends GameRoom {
         try {
             if (!status.compareAndSet(1, 2)) return;
 
-            for (Player player : getPlayers()) {
-                Phraser.send(player.getOs(), new Message(17, new String[]{"Error Parameters", "H"}));
+            for (int i = 0; i < 2; i++) {
+                Phraser.send(getPlayers().get(i).getOs(), new Message(17, new String[]{getPlayers().get(i^1).getName(), "H"}));
             }
 
             Thread tetrisThread = new Thread(tetris);

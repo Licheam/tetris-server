@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class Phraser {
     public static String byteArrayToHex(byte[] a) {
         StringBuilder sb = new StringBuilder(a.length * 2);
-        for(byte b: a)
+        for (byte b : a)
             sb.append(String.format("%02x", b));
         return sb.toString();
     }
@@ -57,12 +57,12 @@ public class Phraser {
 
         for (int i = 0; i < cnt; i++) {
             sz = is.read(buff);
-            if (sz < 4) throw new IOException("Frame Parameter Damage");
+            if (sz < 4) throw new IOException("Frame Parameter Damage : parameters length error");
             int len = bytesToInt(buff);
             byte[] para = new byte[len];
             sz = is.read(para);
-            if (sz < len) {
-                throw new IOException("Frame Parameter Damage");
+            if (sz != len) {
+                throw new IOException("Frame Parameter Damage : parameters length with " + sz + ", doesn't fit " + sz);
             }
             paras[i] = new String(para, StandardCharsets.UTF_8);
         }
