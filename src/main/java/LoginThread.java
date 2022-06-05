@@ -12,6 +12,8 @@ public class LoginThread implements Runnable {
 
     private final Socket socket;
 
+    private static DBInfo database = new DBInfo("com.mysql.cj.jdbc.Driver", "jdbc:mysql://localhost:3306", "root", "12345678");
+
     public LoginThread(Socket socket) {
         this.socket = socket;
     }
