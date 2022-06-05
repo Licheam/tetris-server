@@ -182,6 +182,11 @@ public class Tetris implements Runnable{
         }else{
             curGame = frame;
         }
+        for(int i = 0, j = n - 1; i < j; i++, j--){
+            char[] x =  curGame[i];
+            curGame[i] = curGame[j];
+            curGame[j] = x;
+        }
         return new Frame(state, curGame, score, new String(nexts));
     }
 
