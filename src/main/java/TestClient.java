@@ -5,7 +5,7 @@ import java.util.Scanner;
 public class TestClient implements Runnable {
     public static void main(String[] args) {
         try {
-            Socket socket = new Socket("leachim.top", 6709);
+            Socket socket = new Socket("localhost", 6709);
             System.out.println("Connected");
 
             InputStream is = socket.getInputStream();

@@ -3,6 +3,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,31 +51,27 @@ public class Phraser {
         int sz = is.read(buff);
         if (sz == 0) return null;
         else if (sz < 4) throw new IOException("Frame Head Damage");
-//        bytesToInt(buff);
+        int frameLen = bytesToInt(buff);
 
-        sz = is.read(buff);
-        if (sz < 4) throw new IOException("Frame Attribute Damage");
-        int attr = bytesToInt(buff);
+        byte[] frameBytes = is.readNBytes(frameLen);
+        if (frameBytes.length != frameLen) {
+            throw new IOException("Frame Body Losses");
+        }
 
-        sz = is.read(buff);
-        if (sz < 4) throw new IOException("Frame Attribute Damage");
-        int cnt = bytesToInt(buff);
+        ByteBuffer frameBuff = ByteBuffer.wrap(frameBytes);
+        frameBuff.order(ByteOrder.LITTLE_ENDIAN);
+
+        int attr = frameBuff.getInt();
+
+        int cnt = frameBuff.getInt();
 
         String[] paras = new String[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            sz = is.read(buff);
-            if (sz < 4) throw new IOException("Frame Parameter Damage : parameters length error");
-            int len = bytesToInt(buff);
+            int len = frameBuff.getInt();
             byte[] para = new byte[len];
-            sz = is.read(para);
-//            System.out.println("READING a len " + len + " as size " + sz + " aka " + byteArrayToHex(buff));
-            if (sz != len) {
-                System.out.println("String: " + new String(para, StandardCharsets.UTF_8));
-                throw new IOException("Frame{" + attr + "," + cnt + "," + i + "} Parameter Damage : parameters length with " + sz + ", doesn't fit " + len + " aka " + byteArrayToHex(buff));
-            }
+            frameBuff.get(para);
             paras[i] = new String(para, StandardCharsets.UTF_8);
-//            System.out.println(paras[i]);
         }
 
         System.out.println("Receive a message:");
