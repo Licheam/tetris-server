@@ -47,10 +47,13 @@ public class Phraser {
     }
 
     public static Message receive(InputStream is) throws IOException {
+        if(is.available() == 0) return null;
         byte[] buff = new byte[4];
         int sz = is.read(buff);
-        if (sz == 0) return null;
-        else if (sz < 4) throw new IOException("Frame Head Damage");
+        if (sz == 0) {
+            System.out.println("Receive nothing!");
+            return null;
+        } else if (sz < 4) throw new IOException("Frame Head Damage");
         int frameLen = bytesToInt(buff);
 
         byte[] frameBytes = is.readNBytes(frameLen);
@@ -94,7 +97,7 @@ public class Phraser {
         buff.addAll(Arrays.asList(intToBytes(message.parameters.length)));
         for (int i = 0; i < message.parameters.length; i++) {
             assert message.parameters[i].length() == Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))).size();
-            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
+//            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
             System.out.println("'" + message.parameters[i] + "'");
             buff.addAll(Arrays.asList(intToBytes(message.parameters[i].length())));
             buff.addAll(Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))));

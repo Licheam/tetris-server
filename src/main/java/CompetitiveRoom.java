@@ -11,7 +11,19 @@ public class CompetitiveRoom extends GameRoom {
 
     @Override
     public boolean operate(int op, Player player) {
-        return false;
+        if (this.getStatus() != 2) return false;
+        System.out.println("Player " + getPlayers().indexOf(player) + " do an operation " + op);
+        switch (op) {
+            case 0 -> tetrises[getPlayers().indexOf(player)].land(0);
+            case 1 -> tetrises[getPlayers().indexOf(player)].rotate(0);
+            case 2 -> tetrises[getPlayers().indexOf(player)].down(0);
+            case 3 -> tetrises[getPlayers().indexOf(player)].left(0);
+            case 4 -> tetrises[getPlayers().indexOf(player)].right(0);
+            default -> {
+                return false;
+            }
+        }
+        return true;
     }
 
     private CompetitiveRoom(String id) {
@@ -32,8 +44,8 @@ public class CompetitiveRoom extends GameRoom {
                 tetrisThreads[i].start();
             }
 
-            for (Player player : getPlayers()) {
-                Phraser.send(player.getOs(), new Message(17, new String[]{"Error Parameters", "H"}));
+            for (int i = 0; i < 2; i++) {
+                Phraser.send(getPlayers().get(i).getOs(), new Message(17, new String[]{getPlayers().get(i ^ 1).getName(), "J"}));
             }
             Frame[] frames = new Frame[2];
             while ((tetrisThreads[0].isAlive() || tetrisThreads[1].isAlive()) && getStatus() == 2) {

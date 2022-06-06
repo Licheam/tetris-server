@@ -31,13 +31,17 @@ public abstract class GameRoom implements Runnable {
         rooms.remove(id);
     }
 
+    public synchronized boolean threadAlive() {
+        return roomThread.isAlive();
+    }
+
     public synchronized Thread getThread() {
         return roomThread;
     }
 
     private final Thread roomThread;
     protected static final Hashtable<String, GameRoom> rooms = new Hashtable<>();
-    protected AtomicInteger status;//0 offline, 1 waiting, 2 running
+    protected final AtomicInteger status;//0 offline, 1 waiting, 2 running
     private final String id;
     private final List<Player> players;
 

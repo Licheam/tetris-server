@@ -1,6 +1,8 @@
 import java.io.IOException;
 import java.util.Collections;
 
+import static java.lang.Thread.sleep;
+
 public class CooperativeRoom extends GameRoom {
 
     public static GameRoom createRoom(String id) {
@@ -11,6 +13,7 @@ public class CooperativeRoom extends GameRoom {
     @Override
     public boolean operate(int op, Player player) {
         if (this.getStatus() != 2) return false;
+        System.out.println("Player " + getPlayers().indexOf(player) + " do an operation " + op);
         switch (op) {
             case 0 -> tetris.land(getPlayers().indexOf(player));
             case 1 -> tetris.rotate(getPlayers().indexOf(player));
@@ -29,13 +32,13 @@ public class CooperativeRoom extends GameRoom {
     private CooperativeRoom(String id) {
         super(id);
         this.tetris = new Tetris(20, 20, 2);
-
     }
 
     @Override
     public void run() {
         try {
             if (!status.compareAndSet(1, 2)) return;
+            assert getStatus() == 2;
 
             for (int i = 0; i < 2; i++) {
                 Phraser.send(getPlayers().get(i).getOs(), new Message(17, new String[]{getPlayers().get(i ^ 1).getName(), "H"}));
@@ -60,9 +63,9 @@ public class CooperativeRoom extends GameRoom {
             }
             for (Player player : getPlayers()) {
                 try {
-                    if(!tetrisThread.isAlive()){
+                    if (!tetrisThread.isAlive()) {
                         Phraser.send(player.getOs(), new Message(11, new String[]{"Tetris is dead!"}));
-                    } else if(getStatus() != 2) {
+                    } else if (getStatus() != 2) {
                         Phraser.send(player.getOs(), new Message(11, new String[]{"Game is closed by outside"}));
                     } else {
                         Phraser.send(player.getOs(), new Message(11, new String[]{"Game is closed by Unknown issues"}));
