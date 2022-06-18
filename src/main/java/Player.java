@@ -5,6 +5,8 @@ import java.net.Socket;
 import java.util.Hashtable;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.lang.Thread.sleep;
+
 public class Player {
 
     public static int getPlayerStatus(String name) {
@@ -13,7 +15,7 @@ public class Player {
     }
 
     public static Player getPlayer(String name) {
-        if(players.containsKey(name))
+        if (players.containsKey(name))
             return players.get(name);
         return null;
     }
@@ -86,9 +88,10 @@ public class Player {
 
                     if (message.parameters[1].equals("H") || message.parameters[1].equals("J")) {
                         GameRoom room;
-                        if (message.parameters[1].equals("H")) {
+                        String gameType = message.parameters[1];
+                        if (gameType.equals("H")) {
                             if (CooperativeRoom.getRoom(id) == null) {
-                                Phraser.send(os, new Message(8, new String[]{"Create New Room"}));
+                                Phraser.send(os, new Message(7, new String[]{"Create New Room"}));
                                 message = Phraser.blockToReceive(is);
                                 if (message.attribute == 0) continue;
                                 else if (message.attribute != 1) throw new IOException("Error Frame");
@@ -96,7 +99,7 @@ public class Player {
                             room = CooperativeRoom.createRoom(id);
                         } else {
                             if (CompetitiveRoom.getRoom(id) == null) {
-                                Phraser.send(os, new Message(8, new String[]{"Create New Room"}));
+                                Phraser.send(os, new Message(7, new String[]{"Create New Room"}));
                                 message = Phraser.blockToReceive(is);
                                 if (message.attribute == 0) continue;
                                 else if (message.attribute != 1) throw new IOException("Error Frame");
@@ -104,30 +107,33 @@ public class Player {
                             room = CompetitiveRoom.createRoom(id);
                         }
 
-                        if (room.getClass() != CooperativeRoom.class) {
+                        if (room.getClass() == CooperativeRoom.class && !gameType.equals("H")) {
+                            Phraser.send(os, new Message(0, new String[]{"Already used"}));
+                            continue;
+                        } else if (room.getClass() == CompetitiveRoom.class && !gameType.equals("J")) {
                             Phraser.send(os, new Message(0, new String[]{"Already used"}));
                             continue;
                         }
+
                         if (room.getPlayers().size() == 1) {
-                            Phraser.send(os, new Message(7, new String[]{room.getPlayers().get(0).getName()}));
+                            Phraser.send(os, new Message(8, new String[]{room.getPlayers().get(0).getName()}));
                             message = Phraser.blockToReceive(is);
                             if (message.attribute == 0) continue;
                             else if (message.attribute != 1) throw new IOException("Error Frame");
                         }
 
-
                         room.join(this);
                         if (room.getPlayers().size() == 2) {
                             room.getThread().start();
-                        } else {
-                            while (room.getStatus() == 1) {
-                                message = Phraser.receive(is);
-                                if (message != null) {
-                                    if (message.attribute == 0) {
-                                        room.close();
-                                        break;
-                                    } else throw new IOException("Error Frame");
-                                }
+                        }
+
+                        while (room.getStatus() == 1) {
+                            message = Phraser.receive(is);
+                            if (message != null) {
+                                if (message.attribute == 0) {
+                                    room.close();
+                                    break;
+                                } else throw new IOException("Error Attibute : " + message.attribute + " status:" + room.getStatus());
                             }
                         }
 
@@ -149,10 +155,11 @@ public class Player {
                                     case "s" -> room.operate(0, this);
                                     default -> throw new IOException("Error Frame");
                                 }
-                            } else if(message.attribute == 1) {
+                            } else if (message.attribute == 1) {
                                 break;
                             }
                         }
+                        System.out.println("ROOM is NOT ALIVE");
                     } else {
                         Phraser.send(os, new Message(0, new String[]{"No such game type"}));
                     }

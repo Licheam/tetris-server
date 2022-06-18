@@ -3,6 +3,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,21 +17,27 @@ public class Phraser {
         return sb.toString();
     }
 
+    public static String ByteArrayToHex(Byte[] a) {
+        StringBuilder sb = new StringBuilder(a.length * 2);
+        for (byte b : a)
+            sb.append(String.format("%02x", b));
+        return sb.toString();
+    }
+
     private static int bytesToInt(byte[] b) {
         if (b.length < 4) return 0;
-        int r = 0;
-        for (int i = 0; i < 4; i++)
-            r += (int) (b[i]) << (i * 8);
-        return r;
+        return ((b[3] & 0xFF) << 24) |
+                ((b[2] & 0xFF) << 16) |
+                ((b[1] & 0xFF) << 8) |
+                ((b[0] & 0xFF));
     }
 
     private static Byte[] intToBytes(int x) {
-        Byte[] bytes = new Byte[4];
-        for (int i = 0; i < 4; i++) {
-            bytes[i] = (byte) (x % (1 << 8));
-            x >>= 8;
-        }
-        return bytes;
+        return new Byte[]{
+                (byte) x,
+                (byte) (x >>> 8),
+                (byte) (x >>> 16),
+                (byte) (x >>> 24)};
     }
 
     public static Message blockToReceive(InputStream is) throws IOException {
@@ -39,31 +47,33 @@ public class Phraser {
     }
 
     public static Message receive(InputStream is) throws IOException {
+        if(is.available() == 0) return null;
         byte[] buff = new byte[4];
         int sz = is.read(buff);
-        if (sz == 0) return null;
-        else if (sz < 4) throw new IOException("Frame Head Damage");
-//        bytesToInt(buff);
+        if (sz == 0) {
+            System.out.println("Receive nothing!");
+            return null;
+        } else if (sz < 4) throw new IOException("Frame Head Damage");
+        int frameLen = bytesToInt(buff);
 
-        sz = is.read(buff);
-        if (sz < 4) throw new IOException("Frame Attribute Damage");
-        int attr = bytesToInt(buff);
+        byte[] frameBytes = is.readNBytes(frameLen);
+        if (frameBytes.length != frameLen) {
+            throw new IOException("Frame Body Losses");
+        }
 
-        sz = is.read(buff);
-        if (sz < 4) throw new IOException("Frame Attribute Damage");
-        int cnt = bytesToInt(buff);
+        ByteBuffer frameBuff = ByteBuffer.wrap(frameBytes);
+        frameBuff.order(ByteOrder.LITTLE_ENDIAN);
+
+        int attr = frameBuff.getInt();
+
+        int cnt = frameBuff.getInt();
 
         String[] paras = new String[cnt];
 
         for (int i = 0; i < cnt; i++) {
-            sz = is.read(buff);
-            if (sz < 4) throw new IOException("Frame Parameter Damage : parameters length error");
-            int len = bytesToInt(buff);
+            int len = frameBuff.getInt();
             byte[] para = new byte[len];
-            sz = is.read(para);
-            if (sz != len) {
-                throw new IOException("Frame Parameter Damage : parameters length with " + sz + ", doesn't fit " + sz);
-            }
+            frameBuff.get(para);
             paras[i] = new String(para, StandardCharsets.UTF_8);
         }
 
@@ -86,6 +96,9 @@ public class Phraser {
         buff.addAll(Arrays.asList(intToBytes(message.attribute)));
         buff.addAll(Arrays.asList(intToBytes(message.parameters.length)));
         for (int i = 0; i < message.parameters.length; i++) {
+            assert message.parameters[i].length() == Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))).size();
+//            System.out.println("Sendding message with length " + message.parameters[i].length() + " aka " + ByteArrayToHex(intToBytes(message.parameters[i].length())));
+            System.out.println("'" + message.parameters[i] + "'");
             buff.addAll(Arrays.asList(intToBytes(message.parameters[i].length())));
             buff.addAll(Arrays.asList(ArrayUtils.toObject(message.parameters[i].getBytes(StandardCharsets.UTF_8))));
         }
